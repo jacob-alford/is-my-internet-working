@@ -15,6 +15,12 @@ import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
+import Halogen.HTML.CSS as HCSS
+import CSS as CSS
+import CSS.Property (Value(..), Prefixed(..))
+
+mkCssValue :: String -> Value
+mkCssValue = Value <<< Plain
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -42,14 +48,26 @@ initialState _ = {
   inputBox: mempty
 }
 
+app :: forall w i. Array (HH.HTML w i) -> HH.HTML w i
+app = HH.div [ styles ]
+  where 
+    styles = HCSS.style do
+      CSS.display CSS.flex
+      CSS.flexFlow CSS.column CSS.wrap
+      CSS.alignItems (CSS.AlignItemsValue $ mkCssValue "center")
+      CSS.justifyContent (CSS.JustifyContentValue $ mkCssValue "center")
+      CSS.width (CSS.Size $ mkCssValue "100%")
+      CSS.height (CSS.Size $ mkCssValue "100vh")
+
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-  HH.div_
-    [ HH.button [ HE.onClick \_ -> Decrement ] [ HH.text "-" ]
-    , HH.text (show state)
-    , HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ]
-    , HH.input [ HE.onValueInput Input ]
+  app
+    [ HH.div_ [ HH.button [ HE.onClick \_ -> Decrement ] [ HH.text "-" ] ]
+    , HH.div_ [ HH.text (show state) ]
+    , HH.div_ [ HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ] ]
+    , HH.div_ [ HH.input [ HE.onValueInput Input ] ]
     ]
+
 
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
