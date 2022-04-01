@@ -15,12 +15,7 @@ import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
-import Halogen.HTML.CSS as HCSS
-import CSS as CSS
-import CSS.Property (Value(..), Prefixed(..))
-
-mkCssValue :: String -> Value
-mkCssValue = Value <<< Plain
+import Utility (css)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -49,15 +44,7 @@ initialState _ = {
 }
 
 app :: forall w i. Array (HH.HTML w i) -> HH.HTML w i
-app = HH.div [ styles ]
-  where 
-    styles = HCSS.style do
-      CSS.display CSS.flex
-      CSS.flexFlow CSS.column CSS.wrap
-      CSS.alignItems (CSS.AlignItemsValue $ mkCssValue "center")
-      CSS.justifyContent (CSS.JustifyContentValue $ mkCssValue "center")
-      CSS.width (CSS.Size $ mkCssValue "100%")
-      CSS.height (CSS.Size $ mkCssValue "100vh")
+app = HH.div [ css $ "flex flex-wrap flex-row items-center justify-center h-screen" ]
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =

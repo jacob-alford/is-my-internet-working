@@ -1,0 +1,28 @@
+{
+  "name": "is-my-internet-working",
+  "description": "A simple page polling an active internet connection written in Purescript",
+  "author": "Jacob Alford",
+  "license": "MIT",
+  "scripts": {
+    "esbuild": "esbuild --outfile=dist/build.js",
+    "postinstall": "spago install",
+    "clean": "rm -rf node_modules output dce-output .spago dist/*.js *.lock .cache",
+    "build": "spago build",
+    "build-css-dev": "npx tailwindcss -o ./dist/build.css --watch",
+    "build-css-prod": "npx tailwindcss -o ./dist/build.css --minify",
+    "test": "spago test",
+    "bundle:dce": "zephyr -f Main.main",
+    "bundle:build": "spago build --purs-args '--codegen corefn'",
+    "bundle:esbuild": "npm run esbuild -- --bundle index.js --minify",
+    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:esbuild",
+    "serve-dev": "cp ./assets/static-html/index.html ./dist/index.html && concurrently \"npm run esbuild -- --bundle index-dev.js --servedir=dist\" \"npm run build-css-dev\"",
+    "serve-prod": "http-server dist"
+  },
+  "devDependencies": {
+    "concurrently": "^7.0.0",
+    "esbuild": "^0.14.28",
+    "http-server": "^14.1.0",
+    "postcss-import": "^14.1.0",
+    "tailwindcss": "^3.0.23"
+  }
+}
