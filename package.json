@@ -14,9 +14,11 @@
     "bundle:dce": "zephyr -f Main.main",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:esbuild": "npm run esbuild -- --bundle index.js --minify",
-    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:esbuild",
-    "serve-dev": "cp ./assets/static-html/index.html ./dist/index.html && concurrently \"npm run esbuild -- --bundle index-dev.js --servedir=dist\" \"npm run build-css-dev\"",
-    "serve-prod": "http-server dist"
+    "bundle": "npm run bundle:build && npm run bundle:esbuild",
+    "copy-assets": "cp ./assets/static-html/index.html ./dist/index.html",
+    "serve-dev": "npm run copy-assets && concurrently \"npm run build-css-dev\" \"npm run esbuild -- --bundle index-dev.js --servedir=dist\"",
+    "build-prod": "npm run copy-assets && npm run build-css-prod && npm run bundle",
+    "serve-prod": "npm run build-prod && http-server dist"
   },
   "devDependencies": {
     "concurrently": "^7.0.0",
