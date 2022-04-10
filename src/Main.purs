@@ -1,5 +1,5 @@
 module Main
-  ( Action(..)
+  ( Action
   , component
   , initialState
   , main
@@ -9,11 +9,18 @@ module Main
 
 import Prelude
 
+import Affjax as AX
+import Affjax.ResponseFormat as AXRF
+import Control.Monad.Rec.Class (forever)
 import Effect (Effect)
+import Effect.Aff as Aff
+import Effect.Aff.Class (class MonadAff)
+import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
+import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
 import Utility (css)
 
@@ -23,46 +30,68 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 type State = {
-  counter :: Int,
-  inputBox :: String
+  good :: Maybe Boolean,
+  updates :: Int
 }
 
-data Action = Increment | Decrement | Input String
+data Action = Init | Update Boolean
 
-component :: forall query input output m. H.Component query input output m
+component :: forall query input output m. MonadAff m => H.Component query input output m
 component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval H.defaultEval 
+      { handleAction = handleAction
+      , initialize = Just Init 
+      }
     }
 
 initialState :: forall input. input -> State
 initialState _ = {
-  counter: 0,
-  inputBox: mempty
+  good: Nothing,
+  updates: 0
 }
 
-app :: forall w i. Array (HH.HTML w i) -> HH.HTML w i
-app = HH.div [ css $ "flex flex-wrap flex-row items-center justify-center h-screen" ]
+data Connection = Loading | Bad | Good
+
+connectionFromState :: Maybe Boolean -> Connection
+connectionFromState Nothing = Loading
+connectionFromState (Just good) = if good then Good else Bad
+
+app :: forall w i. Connection -> Array (HH.HTML w i) -> HH.HTML w i
+app conn =  HH.div [ css $ "flex flex-wrap flex-row items-center justify-center h-screen transition-colors duration-500 " <> bgColor  ]
+  where 
+    bgColor :: String
+    bgColor = case conn of
+      Loading -> "bg-sky-300"
+      Bad -> "bg-red-500"
+      Good -> "bg-green-400"
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-  app
-    [ HH.div_ [ HH.button [ HE.onClick \_ -> Decrement ] [ HH.text "-" ] ]
-    , HH.div_ [ HH.text (show state) ]
-    , HH.div_ [ HH.button [ HE.onClick \_ -> Increment ] [ HH.text "+" ] ]
-    , HH.div_ [ HH.input [ HE.onValueInput Input ] ]
-    ]
+  app (connectionFromState state.good) case (connectionFromState state.good) of
+    Loading -> [ HH.div_ [ HH.text "Loading..." ] ]
+    Bad -> [ HH.div_ [ HH.text "Not working :-(" ] ]
+    Good -> []
 
 
-handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
+handleAction :: forall output m. MonadAff m => Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
-  Decrement ->
-    H.modify_ \state -> state { counter = state.counter - 1 }
+  Init -> do
+    _ <- H.subscribe =<< timer Update
+    pure unit
+  Update good -> 
+    H.modify_ \state -> { updates: state.updates + 1, good: Just good }
 
-  Increment ->
-    H.modify_ \state -> state { counter = state.counter + 1 }
-
-  Input s ->
-    H.modify_ \state -> state { inputBox = s }
+timer :: forall m a. MonadAff m => (Boolean -> a) -> m (HS.Emitter a)
+timer getVal = do
+  { emitter, listener } <- H.liftEffect HS.create
+  _ <- H.liftAff $ Aff.forkAff $ forever do
+    Aff.delay $ Aff.Milliseconds 8000.0
+    response <- AX.get AXRF.string "https://httpstat.us/200"
+    result <- pure $ case response of
+      Left _ -> false
+      Right _  -> true
+    H.liftEffect $ HS.notify listener (getVal result)
+  pure emitter
