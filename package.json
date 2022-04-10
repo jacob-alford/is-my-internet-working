@@ -18,11 +18,13 @@
     "copy-assets": "cp ./assets/static-html/index.html ./dist/index.html",
     "serve-dev": "npm run copy-assets && concurrently \"npm run build-css-dev\" \"npm run esbuild -- --bundle index-dev.js --servedir=dist\"",
     "build-prod": "npm run copy-assets && npm run build-css-prod && npm run bundle",
-    "serve-prod": "npm run build-prod && http-server dist"
+    "serve-prod": "npm run build-prod && http-server dist",
+    "deploy": "npm run build-prod && gh-pages -d dist"
   },
   "devDependencies": {
     "concurrently": "^7.0.0",
     "esbuild": "^0.14.28",
+    "gh-pages": "^3.2.3",
     "http-server": "^14.1.0",
     "postcss-import": "^14.1.0",
     "tailwindcss": "^3.0.23"
